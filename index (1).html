@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0D0D14">
+<title>Life Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --acc:#7C6AF7;--acc-dim:rgba(124,106,247,.14);--acc-glow:rgba(124,106,247,.35);
+  --bg:#0D0D14;--bg2:#17172400;--bg2s:#171724;--bg3:#222235;--bg4:#2C2C44;
+  --b1:rgba(255,255,255,.07);--b2:rgba(255,255,255,.13);--b3:rgba(255,255,255,.22);
+  --t1:#EEEEF8;--t2:#7878A2;--t3:#3F3F60;
+  --ok:#3EC9A7;--err:#F46B6B;--warn:#F4A942;
+  --r:16px;--rsm:11px;
+  --c-career:#4B9EFF;--c-fitness:#3EC9A7;--c-nutrition:#8FD14F;
+  --c-hobbies:#F4A942;--c-finance:#9B7AF7;--c-relationships:#F46B9D;
+  --bg-img:none;
+}
+[data-light]{
+  --bg:#F0F0F8;--bg2:#FFFFFF00;--bg2s:#FFFFFF;--bg3:#E8E8F2;--bg4:#DDDDF0;
+  --b1:rgba(0,0,0,.07);--b2:rgba(0,0,0,.13);--b3:rgba(0,0,0,.22);
+  --t1:#10101C;--t2:#62628A;--t3:#BCBCD0;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;height:100dvh;overflow:hidden}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--t1)}
+
+/* BG layer */
+#bgl{position:fixed;inset:0;background-image:var(--bg-img);background-size:cover;background-position:center;opacity:.1;pointer-events:none;z-index:0;transition:opacity .3s}
+
+/* App shell */
+#app{position:relative;z-index:1;height:100vh;height:100dvh;max-width:430px;margin:0 auto;display:flex;flex-direction:column}
+
+/* ── PIN ─────────────────────────────────────────────────── */
+#pin-screen{position:fixed;inset:0;z-index:300;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px calc(40px + env(safe-area-inset-bottom));max-width:430px;margin:0 auto;left:50%;transform:translateX(-50%);height:100vh;height:100dvh}
+#pin-screen.show{display:flex}
+.pin-logo{font-size:40px;margin-bottom:20px}
+.pin-h{font-size:26px;font-weight:700;letter-spacing:-.5px;text-align:center;margin-bottom:6px}
+.pin-s{font-size:13px;color:var(--t2);text-align:center;margin-bottom:42px}
+.pin-dots{display:flex;gap:14px;margin-bottom:42px}
+.pd{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--b2);transition:all .15s}
+.pd.on{background:var(--acc);border-color:var(--acc);transform:scale(1.1)}
+.pd.er{background:var(--err);border-color:var(--err)}
+.pin-msg{font-size:12px;color:var(--err);min-height:18px;text-align:center;margin-top:-28px;margin-bottom:22px}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:280px}
+.pk{height:70px;border-radius:15px;background:var(--bg2s);border:.5px solid var(--b1);font-size:22px;font-weight:500;color:var(--t1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;transition:all .1s;user-select:none}
+.pk:active{background:var(--bg3);transform:scale(.93)}
+.pk.sub{font-size:16px;color:var(--t2)}
+
+/* ── SCREENS ─────────────────────────────────────────────── */
+.scr{flex:1;display:none;flex-direction:column;overflow:hidden}
+.scr.on{display:flex;animation:fu .2s ease}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Topbar */
+.tb{background:var(--bg2s);border-bottom:.5px solid var(--b1);padding:14px 16px 11px;flex-shrink:0;display:flex;align-items:center;gap:10px}
+.tb-t{font-size:18px;font-weight:700;letter-spacing:-.4px}
+.tb-s{font-size:11px;color:var(--t2);margin-top:2px}
+.bk{background:none;border:none;color:var(--acc);font-size:13px;cursor:pointer;padding:6px 0;display:flex;align-items:center;gap:3px;font-family:'Sora',sans-serif;white-space:nowrap}
+
+/* Scroll area */
+.sa{flex:1;overflow-y:auto;padding:12px 16px calc(90px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.sa::-webkit-scrollbar{display:none}
+
+/* Bottom nav */
+.bnav{background:var(--bg2s);border-top:.5px solid var(--b1);display:flex;padding:8px 0 calc(22px + env(safe-area-inset-bottom));flex-shrink:0}
+.nb{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--t2);cursor:pointer;padding:4px 0;font-family:'Sora',sans-serif;transition:color .15s}
+.nb.on{color:var(--acc)}
+.nb svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.5}
+
+/* Cards */
+.card{background:var(--bg2s);border-radius:var(--r);border:.5px solid var(--b1);padding:15px 16px;margin-bottom:10px}
+.csm{background:var(--bg2s);border-radius:var(--rsm);border:.5px solid var(--b1);padding:11px 13px;margin-bottom:8px;transition:border-color .15s}
+
+/* Progress */
+.pb{height:4px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-top:8px}
+.pf{height:100%;border-radius:99px;transition:width .5s ease}
+.pb-lg{height:7px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-top:6px}
+.pf-lg{height:100%;border-radius:99px;transition:width .5s ease}
+
+/* Badges */
+.bdg{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500;white-space:nowrap}
+
+/* Section label */
+.sl{font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px}
+
+/* Buttons */
+.btn{width:100%;padding:14px;border-radius:var(--rsm);border:none;font-size:14px;font-weight:500;cursor:pointer;font-family:'Sora',sans-serif;margin-bottom:8px;transition:opacity .2s,transform .1s}
+.btn:active{transform:scale(.98)}
+.btn-a{background:var(--acc);color:#fff}
+.btn-g{background:var(--bg3);color:var(--t1)}
+.btn-d{background:rgba(244,107,107,.12);color:var(--err)}
+
+/* Form */
+.frow{margin-bottom:14px}
+.flbl{font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.fi{width:100%;padding:11px 13px;border-radius:var(--rsm);border:.5px solid var(--b2);background:var(--bg3);color:var(--t1);font-size:14px;font-family:'Sora',sans-serif;outline:none;transition:border-color .15s;-webkit-appearance:none}
+.fi:focus{border-color:var(--acc)}
+textarea.fi{resize:vertical;min-height:90px;line-height:1.6}
+select.fi{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237878A2' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.trow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.topt{padding:12px 8px;border-radius:var(--rsm);border:.5px solid var(--b2);text-align:center;cursor:pointer;font-size:12px;color:var(--t2);background:var(--bg3);transition:all .15s;line-height:1.5}
+.topt.sel{border-color:var(--acc);background:var(--acc-dim);color:var(--acc);font-weight:500}
+.divider{height:.5px;background:var(--b1);margin:18px 0}
+
+/* Stats */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.sc{background:var(--bg2s);border-radius:var(--rsm);border:.5px solid var(--b1);padding:13px 14px}
+.sn{font-size:28px;font-weight:700;letter-spacing:-1px}
+.sl2{font-size:11px;color:var(--t2);margin-top:2px}
+
+/* Cat cards */
+.ccard{border-radius:var(--r);border:.5px solid var(--b1);padding:14px 16px;margin-bottom:10px;cursor:pointer;position:relative;overflow:hidden;background:var(--bg2s);transition:border-color .15s}
+.ccard:hover{border-color:var(--b2)}
+.ccard-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.1;pointer-events:none;transition:opacity .3s}
+.ccard-inner{position:relative;z-index:1}
+.crow{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+.cem{font-size:26px}
+.cn{font-size:15px;font-weight:600}
+.cct{font-size:11px;color:var(--t2);margin-top:1px}
+.ca{margin-left:auto;color:var(--t3);font-size:18px;line-height:1}
+
+/* Goal items */
+.gitem{background:var(--bg2s);border-radius:var(--rsm);border:.5px solid var(--b1);padding:12px 13px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.gitem:hover{border-color:var(--b2)}
+.gitem.lk{opacity:.4;cursor:default;pointer-events:none}
+.grow{display:flex;align-items:flex-start;gap:10px}
+.gck{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--b2);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .2s}
+.gck.ok{background:var(--ok);border-color:var(--ok)}
+.gck.lk{background:var(--bg3);border-color:var(--b1)}
+.gtx{font-size:13px;font-weight:500;color:var(--t1);line-height:1.4}
+.gmt{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;align-items:center}
+
+/* Goal chain */
+.chain-box{background:var(--bg2s);border-radius:var(--r);border:.5px solid var(--b1);padding:14px 16px;margin-bottom:10px}
+.cstep{display:flex;gap:12px}
+.cleft{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.cdot{width:12px;height:12px;border-radius:50%;margin-top:3px}
+.cln{width:1.5px;flex:1;background:var(--b2);min-height:16px}
+.cbody{flex:1;padding-bottom:14px}
+.cbody:last-child{padding-bottom:0}
+
+/* Reward panel */
+.rwp{background:var(--acc-dim);border:.5px solid rgba(124,106,247,.28);border-radius:var(--rsm);padding:13px;margin-bottom:10px}
+
+/* Log entries */
+.loge{background:var(--bg2s);border-radius:var(--rsm);border:.5px solid var(--b1);padding:10px 13px;margin-bottom:7px}
+.logd{font-size:10px;color:var(--t2)}
+.logn{font-size:13px;margin-top:4px;line-height:1.5}
+
+/* Rewards screen */
+.rwcard{background:var(--bg2s);border-radius:var(--r);border:.5px solid var(--b1);padding:13px 15px;margin-bottom:10px;display:flex;align-items:center;gap:13px}
+.rwi{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.rwd{opacity:.4}
+
+/* Settings */
+.tglr{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:.5px solid var(--b1)}
+.tgl{width:44px;height:26px;border-radius:13px;background:var(--bg3);border:none;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.tgl.on{background:var(--acc)}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;pointer-events:none}
+.tgl.on::after{transform:translateX(18px)}
+
+/* Sync toast */
+#toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:400;font-size:11px;padding:5px 14px;border-radius:99px;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap}
+#toast.show{opacity:1}
+#toast.ok{background:rgba(62,201,167,.15);color:var(--ok);border:.5px solid rgba(62,201,167,.3)}
+#toast.err{background:rgba(244,107,107,.15);color:var(--err);border:.5px solid rgba(244,107,107,.3)}
+#toast.sy{background:var(--acc-dim);color:var(--acc);border:.5px solid rgba(124,106,247,.3)}
+
+/* Spinner */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--b2);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Empty state */
+.empty{text-align:center;padding:48px 20px}
+.empty-i{font-size:42px;margin-bottom:12px}
+.empty-t{font-size:14px;color:var(--t2);line-height:1.6}
+
+/* Pill tag */
+.pill-opt{font-size:10px;padding:2px 8px;border-radius:99px;background:var(--acc-dim);color:var(--acc);font-weight:500;display:inline-block;margin-left:6px}
+
+/* Goal complete check animation */
+@keyframes pop{0%{transform:scale(0.8)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+.gck.ok{animation:pop .25s ease}
+</style>
+</head>
+<body>
+<div id="bgl"></div>
+<div id="toast"></div>
+
+<!-- ═══════════════ PIN SCREEN ═══════════════ -->
+<div id="pin-screen" class="show">
+  <div class="pin-logo">🎯</div>
+  <div class="pin-h" id="pin-h">Welcome back</div>
+  <div class="pin-s" id="pin-s">Enter your PIN to continue</div>
+  <div class="pin-dots">
+    <div class="pd" id="pd0"></div><div class="pd" id="pd1"></div>
+    <div class="pd" id="pd2"></div><div class="pd" id="pd3"></div>
+  </div>
+  <div class="pin-msg" id="pin-msg"></div>
+  <div class="pin-grid" id="pin-grid"></div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════════════ -->
+<div id="app">
+
+<!-- ── HOME ─────────────────────────────────── -->
+<div class="scr on" id="scr-home">
+  <div class="tb" style="justify-content:space-between">
+    <div>
+      <div class="tb-t" id="greeting"></div>
+      <div class="tb-s" id="hdate"></div>
+    </div>
+    <button onclick="openForm(null,null)" style="background:var(--acc);border:none;border-radius:10px;padding:7px 14px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif">+ Goal</button>
+  </div>
+  <div class="sa">
+    <div class="sgrid" id="home-stats"></div>
+    <div class="sl">Your categories</div>
+    <div id="home-cats"></div>
+  </div>
+  <nav class="bnav" id="nav-home"></nav>
+</div>
+
+<!-- ── CATEGORY ──────────────────────────────── -->
+<div class="scr" id="scr-cat">
+  <div class="tb">
+    <button class="bk" onclick="go('home')">‹ Back</button>
+    <div>
+      <div class="tb-t" id="cat-title" style="font-size:16px"></div>
+      <div class="tb-s" id="cat-sub"></div>
+    </div>
+    <button onclick="openForm(S.cat,null)" style="margin-left:auto;background:var(--bg3);border:none;border-radius:8px;padding:6px 13px;font-size:12px;color:var(--t1);cursor:pointer;font-family:'Sora',sans-serif">+ Add</button>
+  </div>
+  <div class="sa" id="cat-body"></div>
+  <nav class="bnav" id="nav-cat"></nav>
+</div>
+
+<!-- ── GOAL DETAIL ───────────────────────────── -->
+<div class="scr" id="scr-goal">
+  <div class="tb">
+    <button class="bk" id="goal-back">‹ Category</button>
+    <div style="flex:1;overflow:hidden">
+      <div class="tb-t" id="goal-title" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+    </div>
+    <button onclick="openForm(null,S.gid)" style="background:none;border:none;color:var(--t2);font-size:12px;cursor:pointer;font-family:'Sora',sans-serif;margin-left:8px">Edit</button>
+  </div>
+  <div class="sa" id="goal-body"></div>
+  <nav class="bnav" id="nav-goal"></nav>
+</div>
+
+<!-- ── ADD / EDIT GOAL ───────────────────────── -->
+<div class="scr" id="scr-form">
+  <div class="tb">
+    <button class="bk" onclick="cancelForm()">‹ Cancel</button>
+    <div class="tb-t" id="form-h" style="font-size:16px"></div>
+  </div>
+  <div class="sa">
+    <div class="frow">
+      <div class="flbl">Goal name</div>
+      <input class="fi" id="f-name" placeholder="What do you want to achieve?">
+    </div>
+    <div class="frow">
+      <div class="flbl">Category</div>
+      <select class="fi" id="f-cat"></select>
+    </div>
+    <div class="frow">
+      <div class="flbl">Goal type</div>
+      <div class="trow">
+        <div class="topt sel" id="to-one" onclick="setType('onetime')">📅 One-time<br><span style="font-size:10px;font-weight:400;opacity:.8">Has a deadline</span></div>
+        <div class="topt" id="to-rec" onclick="setType('recurring')">🔄 Recurring<br><span style="font-size:10px;font-weight:400;opacity:.8">Log each time</span></div>
+      </div>
+    </div>
+    <div id="deadline-row" class="frow">
+      <div class="flbl">Deadline</div>
+      <input class="fi" type="date" id="f-dl">
+    </div>
+    <div id="freq-row" class="frow" style="display:none">
+      <div class="flbl">Frequency</div>
+      <select class="fi" id="f-freq">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+    </div>
+    <div class="frow">
+      <div class="flbl">Current progress (0–100)</div>
+      <input class="fi" type="number" id="f-prog" min="0" max="100" value="0" placeholder="0">
+    </div>
+    <div class="divider"></div>
+    <div class="frow">
+      <div class="flbl">🔗 Unlocks after<span class="pill-opt">Optional</span></div>
+      <select class="fi" id="f-unlock" style="margin-top:6px">
+        <option value="">None — available right away</option>
+      </select>
+      <div style="font-size:11px;color:var(--t2);margin-top:5px;line-height:1.6">Goal stays locked until the selected goal is completed.</div>
+    </div>
+    <div class="divider"></div>
+    <div class="frow">
+      <div class="flbl">🏆 Reward when completed<span class="pill-opt">Optional</span></div>
+      <input class="fi" id="f-reward" placeholder="e.g. New running shoes 👟" style="margin-top:6px">
+    </div>
+    <div class="divider"></div>
+    <button class="btn btn-a" onclick="saveGoal()">Save goal</button>
+    <button class="btn btn-g" onclick="cancelForm()">Cancel</button>
+    <button class="btn btn-d" id="f-del" style="display:none" onclick="delGoal()">Delete goal</button>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ── CHECK-IN ──────────────────────────────── -->
+<div class="scr" id="scr-ci">
+  <div class="tb">
+    <button class="bk" onclick="go('goal')">‹ Cancel</button>
+    <div class="tb-t" style="font-size:16px">Log check-in</div>
+  </div>
+  <div class="sa">
+    <div class="frow">
+      <div class="flbl">Date</div>
+      <input class="fi" type="date" id="ci-date">
+    </div>
+    <div class="frow">
+      <div class="flbl">Note — what did you do?</div>
+      <textarea class="fi" id="ci-note" placeholder="Describe what you did, how it felt, any wins or challenges..."></textarea>
+    </div>
+    <div class="frow">
+      <div class="flbl">Update progress % (0–100)</div>
+      <input class="fi" type="number" id="ci-prog" min="0" max="100" placeholder="Leave blank to keep current progress">
+    </div>
+    <button class="btn btn-a" onclick="saveCi()">Save check-in</button>
+    <button class="btn btn-g" onclick="go('goal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ── REWARDS ───────────────────────────────── -->
+<div class="scr" id="scr-rewards">
+  <div class="tb">
+    <div>
+      <div class="tb-t">Rewards 🏆</div>
+      <div class="tb-s" id="rw-sub"></div>
+    </div>
+  </div>
+  <div class="sa" id="rw-body"></div>
+  <nav class="bnav" id="nav-rewards"></nav>
+</div>
+
+<!-- ── SETTINGS ──────────────────────────────── -->
+<div class="scr" id="scr-settings">
+  <div class="tb"><div class="tb-t">Settings ⚙️</div></div>
+  <div class="sa">
+    <div class="sl">Appearance</div>
+    <div class="tglr">
+      <div>
+        <div style="font-size:14px;font-weight:500">Dark mode</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:2px">Toggle light / dark theme</div>
+      </div>
+      <button class="tgl on" id="tgl-dark" onclick="toggleDark()"></button>
+    </div>
+    <div style="margin-top:14px">
+      <div class="flbl">App background image URL</div>
+      <input class="fi" id="s-bg" placeholder="https://imgur.com/yourimage.jpg" oninput="applyBg(this.value)" style="margin-top:6px">
+      <div style="font-size:11px;color:var(--t2);margin-top:5px">Upload a photo to imgur.com and paste the direct link here.</div>
+    </div>
+    <div class="sl" style="margin-top:18px">Categories</div>
+    <div class="tglr" style="border:none;padding-top:4px">
+      <div>
+        <div style="font-size:14px;font-weight:500">Manage categories</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:2px">Add, edit, or remove categories</div>
+      </div>
+      <button class="btn btn-g" style="width:auto;padding:8px 16px;margin:0;font-size:12px" onclick="openManageCats()">Manage →</button>
+    </div>
+    <div class="sl" style="margin-top:4px">Category images</div>
+    <div id="cat-img-settings"></div>
+    <div class="sl" style="margin-top:4px">GitHub sync</div>
+    <div style="font-size:12px;color:var(--t2);margin-bottom:12px;line-height:1.7">Your data is saved as <strong style="color:var(--t1)">data.json</strong> in a GitHub repo. See <strong style="color:var(--t1)">SETUP.md</strong> for step-by-step instructions.</div>
+    <div class="frow">
+      <div class="flbl">GitHub username</div>
+      <input class="fi" id="s-ghowner" placeholder="e.g. johndoe" style="margin-top:4px" oninput="setSetting('ghOwner',this.value.trim())">
+    </div>
+    <div class="frow">
+      <div class="flbl">Repository name</div>
+      <input class="fi" id="s-ghrepo" placeholder="e.g. my-life-tracker" style="margin-top:4px" oninput="setSetting('ghRepo',this.value.trim())">
+    </div>
+    <div class="frow">
+      <div class="flbl">Personal access token</div>
+      <input class="fi" id="s-ghtoken" type="password" placeholder="ghp_xxxxxxxxxxxx" style="margin-top:4px" oninput="setSetting('ghToken',this.value.trim())">
+      <div style="font-size:11px;color:var(--t2);margin-top:5px;line-height:1.6">GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → give it <strong style="color:var(--t1)">repo</strong> scope.</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:18px">
+      <button class="btn btn-g" style="margin:0;padding:10px 0;font-size:12px" onclick="testConn()">Test connection</button>
+      <button class="btn btn-g" style="margin:0;padding:10px 0;font-size:12px" onclick="syncNow()">Sync now</button>
+    </div>
+    <div class="sl">Security</div>
+    <div class="tglr" style="border:none">
+      <div>
+        <div style="font-size:14px;font-weight:500">Change PIN</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:2px">Set a new 4-digit PIN</div>
+      </div>
+      <button class="btn btn-g" style="width:auto;padding:8px 16px;margin:0;font-size:12px" onclick="startChangePin()">Change</button>
+    </div>
+    <div class="sl" style="margin-top:4px">Data</div>
+    <button class="btn btn-g" onclick="exportData()" style="margin-bottom:8px">📦 Export data as JSON backup</button>
+    <button class="btn btn-g" onclick="document.getElementById('imp').click()">📥 Import from JSON backup</button>
+    <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)">
+    <div style="height:20px"></div>
+  </div>
+  <nav class="bnav" id="nav-settings"></nav>
+</div>
+
+<!-- ── MANAGE CATEGORIES ─────────────────────── -->
+<div class="scr" id="scr-cats">
+  <div class="tb">
+    <button class="bk" onclick="go('settings')">‹ Settings</button>
+    <div class="tb-t" style="font-size:16px">Categories</div>
+    <button onclick="openNewCat()" style="margin-left:auto;background:var(--acc);border:none;border-radius:8px;padding:6px 14px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif">+ New</button>
+  </div>
+  <div class="sa">
+    <div style="font-size:12px;color:var(--t2);margin-bottom:12px;line-height:1.7">Your 6 default categories are shown below. Add as many new ones as you like — each gets its own emoji, name, and color.</div>
+    <div id="cats-list"></div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ── CATEGORY FORM ─────────────────────────── -->
+<div class="scr" id="scr-catform">
+  <div class="tb">
+    <button class="bk" onclick="go('cats')">‹ Cancel</button>
+    <div class="tb-t" id="cf-title" style="font-size:16px">New category</div>
+  </div>
+  <div class="sa">
+    <div class="frow">
+      <div class="flbl">Category name</div>
+      <input class="fi" id="cf-name" placeholder="e.g. Mental Health, Travel, Spirituality…">
+    </div>
+    <div class="frow">
+      <div class="flbl">Emoji icon</div>
+      <input class="fi" id="cf-emoji" placeholder="Paste one emoji, e.g. 🧘" maxlength="4" style="font-size:22px">
+    </div>
+    <div class="frow">
+      <div class="flbl">Color</div>
+      <div id="cf-colors" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px"></div>
+    </div>
+    <div class="divider"></div>
+    <button class="btn btn-a" onclick="saveCat()">Save category</button>
+    <button class="btn btn-g" onclick="go('cats')">Cancel</button>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════
+const DEFAULT_CATS=[
+  {id:'career',        label:'Career',        emoji:'💼', cv:'#4B9EFF'},
+  {id:'fitness',       label:'Fitness',       emoji:'🏋️', cv:'#3EC9A7'},
+  {id:'nutrition',     label:'Nutrition',     emoji:'🥗', cv:'#8FD14F'},
+  {id:'hobbies',       label:'Hobbies',       emoji:'🎨', cv:'#F4A942'},
+  {id:'finance',       label:'Finance',       emoji:'💰', cv:'#9B7AF7'},
+  {id:'relationships', label:'Relationships', emoji:'❤️', cv:'#F46B9D'},
+];
+const CAT_COLORS=['#4B9EFF','#3EC9A7','#8FD14F','#F4A942','#9B7AF7','#F46B9D','#FF7043','#26C6DA','#AB47BC','#EC407A','#66BB6A','#FFA726','#EF5350','#7E57C2','#29B6F6','#FF8A65'];
+let CATS=[];
+
+const NAV=[
+  {id:'home',    lbl:'Home',    ico:'<path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/>'},
+  {id:'cat',     lbl:'Goals',   ico:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="1"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="3" y1="12" x2="1" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>'},
+  {id:'rewards', lbl:'Rewards', ico:'<path d="M8 21h8M12 17v4M17 6H7l1 7h8l1-7zM3 6h18"/><path d="M7 6a3 3 0 016 0"/><path d="M17 6a3 3 0 00-6 0"/>'},
+  {id:'settings',lbl:'Settings',ico:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>'},
+];
+
+// ════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════
+const S={
+  cat:null,   // current category id
+  gid:null,   // current goal id
+  eid:null,   // editing goal id
+  ftype:'onetime',  // form type
+  pin:'',     // pin buffer
+  setPinMode:false,
+  pinTmp:'',
+  prevScr:'home',
+  editCatId:null,
+  selColor:null,
+};
+
+// ════════════════════════════════════════════════
+//  LOCAL DB (localStorage)
+// ════════════════════════════════════════════════
+const DB={
+  _g(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch{return d}},
+  _s(k,v){localStorage.setItem(k,JSON.stringify(v))},
+  get goals(){return this._g('lt_goals',[])},
+  set goals(v){this._s('lt_goals',v)},
+  get checkins(){return this._g('lt_checkins',[])},
+  set checkins(v){this._s('lt_checkins',v)},
+  get cfg(){return this._g('lt_cfg',{})},
+  set cfg(v){this._s('lt_cfg',v)},
+  getCfg(k,d=''){const c=this.cfg;return c[k]!==undefined?c[k]:d},
+  setCfg(k,v){const c=this.cfg;c[k]=v;this.cfg=c},
+  get cats(){return this._g('lt_cats',null)},
+  set cats(v){this._s('lt_cats',v)},
+};
+
+// ════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function e(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fd(d){if(!d)return'';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}catch{return d}}
+function dl(d){if(!d)return null;return Math.ceil((new Date(d)-new Date())/86400000)}
+function today(){return new Date().toISOString().split('T')[0]}
+function setSetting(k,v){DB.setCfg(k,v)}
+
+// ════════════════════════════════════════════════
+//  CATEGORY MANAGEMENT
+// ════════════════════════════════════════════════
+function loadCats(){
+  const saved=DB.cats;
+  CATS=saved&&saved.length?saved:JSON.parse(JSON.stringify(DEFAULT_CATS));
+}
+
+function saveCats(){DB.cats=CATS;syncWrite();}
+
+function openManageCats(){
+  renderManageCats();go('cats');
+}
+
+function renderManageCats(){
+  document.getElementById('cats-list').innerHTML=CATS.map((cat,i)=>`
+    <div class="csm" style="display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;border-radius:10px;background:${cat.cv}22;border:.5px solid ${cat.cv}44;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${cat.emoji}</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500">${e(cat.label)}</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:1px">${DB.goals.filter(g=>g.category===cat.id).length} goals</div>
+      </div>
+      <button onclick="editCat('${cat.id}')" style="background:var(--bg3);border:none;border-radius:8px;padding:6px 12px;font-size:12px;color:var(--t2);cursor:pointer;font-family:'Sora',sans-serif">Edit</button>
+      <button onclick="deleteCat('${cat.id}')" style="background:rgba(244,107,107,.12);border:none;border-radius:8px;padding:6px 10px;font-size:12px;color:var(--err);cursor:pointer;font-family:'Sora',sans-serif">✕</button>
+    </div>`).join('');
+}
+
+function openNewCat(){
+  S.editCatId=null;
+  document.getElementById('cf-name').value='';
+  document.getElementById('cf-emoji').value='';
+  document.getElementById('cf-title').textContent='New category';
+  renderColorPicker(CAT_COLORS[0]);
+  go('catform');
+}
+
+function editCat(id){
+  const cat=CATS.find(c=>c.id===id);if(!cat)return;
+  S.editCatId=id;
+  document.getElementById('cf-name').value=cat.label;
+  document.getElementById('cf-emoji').value=cat.emoji;
+  document.getElementById('cf-title').textContent='Edit category';
+  renderColorPicker(cat.cv);
+  go('catform');
+}
+
+function renderColorPicker(selected){
+  document.getElementById('cf-colors').innerHTML=CAT_COLORS.map(c=>`
+    <div onclick="selectColor('${c}')" id="cc-${c.slice(1)}" style="width:32px;height:32px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c===selected?'white':'transparent'};transition:border .15s;flex-shrink:0"></div>`).join('');
+  S.selColor=selected;
+}
+
+function selectColor(c){
+  document.querySelectorAll('[id^="cc-"]').forEach(el=>el.style.border='3px solid transparent');
+  const el=document.getElementById('cc-'+c.slice(1));
+  if(el)el.style.border='3px solid white';
+  S.selColor=c;
+}
+
+function saveCat(){
+  const label=document.getElementById('cf-name').value.trim();
+  const emoji=document.getElementById('cf-emoji').value.trim()||'📌';
+  if(!label){alert('Please enter a category name.');return;}
+  if(S.editCatId){
+    const cat=CATS.find(c=>c.id===S.editCatId);
+    if(cat){cat.label=label;cat.emoji=emoji;cat.cv=S.selColor||cat.cv;}
+  } else {
+    const id='cat_'+uid();
+    CATS.push({id,label,emoji,cv:S.selColor||CAT_COLORS[0]});
+  }
+  saveCats();
+  renderManageCats();
+  refreshCatSelect();
+  go('cats');
+  toast(S.editCatId?'Category updated ✓':'Category added ✓','ok');
+}
+
+function deleteCat(id){
+  const goalCount=DB.goals.filter(g=>g.category===id).length;
+  const msg=goalCount?`This category has ${goalCount} goal${goalCount>1?'s':''}. They won't be deleted but will be uncategorized. Continue?`:'Delete this category?';
+  if(!confirm(msg))return;
+  CATS=CATS.filter(c=>c.id!==id);
+  saveCats();
+  renderManageCats();
+  refreshCatSelect();
+  toast('Category deleted','ok');
+}
+
+function refreshCatSelect(){
+  const sel=document.getElementById('f-cat');
+  if(!sel)return;
+  sel.innerHTML=CATS.map(c=>`<option value="${c.id}">${c.emoji} ${e(c.label)}</option>`).join('');
+}
+
+// ════════════════════════════════════════════════
+//  NAV & ROUTING
+// ════════════════════════════════════════════════
+function buildNavs(){
+  ['home','cat','goal','rewards','settings'].forEach(sid=>{
+    const el=document.getElementById('nav-'+sid);
+    if(!el)return;
+    el.innerHTML=NAV.map(n=>{
+      const on=n.id===sid||(n.id==='cat'&&(sid==='goal'||sid==='cat'));
+      return`<button class="nb ${on?'on':''}" onclick="navGo('${n.id}')">
+        <svg viewBox="0 0 24 24">${n.ico}</svg>${n.lbl}</button>`;
+    }).join('');
+  });
+}
+
+function navGo(id){
+  if(id==='cat'){
+    if(S.cat)go('cat');else go('home');
+    return;
+  }
+  go(id);
+}
+
+function go(id){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
+  const el=document.getElementById('scr-'+id);
+  if(el)el.classList.add('on');
+  if(id==='home')renderHome();
+  else if(id==='cat')renderCat();
+  else if(id==='goal')renderGoal();
+  else if(id==='rewards')renderRewards();
+  else if(id==='settings')renderSettings();
+  else if(id==='cats')renderManageCats();
+}
+
+// ════════════════════════════════════════════════
+//  PIN
+// ════════════════════════════════════════════════
+function initPin(){
+  const grid=document.getElementById('pin-grid');
+  [1,2,3,4,5,6,7,8,9,'',0,'⌫'].forEach(k=>{
+    if(k===''){grid.innerHTML+=`<div></div>`;return;}
+    grid.innerHTML+=`<button class="pk${k==='⌫'?' sub':''}" onclick="pk('${k}')">${k}</button>`;
+  });
+  const saved=DB.getCfg('pin');
+  if(!saved){
+    S.setPinMode=true;
+    document.getElementById('pin-h').textContent='Create your PIN';
+    document.getElementById('pin-s').textContent='Choose a 4-digit PIN to lock your app';
+  }
+}
+
+function pk(k){
+  const msg=document.getElementById('pin-msg');
+  msg.textContent='';
+  if(k==='⌫'){S.pin=S.pin.slice(0,-1);}
+  else if(S.pin.length<4){S.pin+=k;}
+  updDots();
+  if(S.pin.length===4){
+    setTimeout(()=>{
+      if(S.setPinMode){
+        if(!S.pinTmp){
+          S.pinTmp=S.pin;S.pin='';updDots();
+          document.getElementById('pin-h').textContent='Confirm PIN';
+          document.getElementById('pin-s').textContent='Enter it again to confirm';
+        } else {
+          if(S.pin===S.pinTmp){DB.setCfg('pin',S.pin);unlockApp();}
+          else{
+            msg.textContent="PINs don't match. Try again.";
+            pinErr();S.pinTmp='';S.pin='';
+            document.getElementById('pin-h').textContent='Create your PIN';
+            document.getElementById('pin-s').textContent='Choose a 4-digit PIN to lock your app';
+            updDots();
+          }
+        }
+      } else {
+        if(S.pin===DB.getCfg('pin')){unlockApp();}
+        else{msg.textContent='Incorrect PIN. Try again.';pinErr();S.pin='';updDots();}
+      }
+    },80);
+  }
+}
+
+function updDots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('pd'+i);
+    d.classList.toggle('on',i<S.pin.length);
+    d.classList.remove('er');
+  }
+}
+
+function pinErr(){
+  for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);d.classList.remove('on');d.classList.add('er');}
+  setTimeout(()=>{for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.remove('er');},600);
+}
+
+function unlockApp(){
+  document.getElementById('pin-screen').classList.remove('show');
+  S.setPinMode=false;S.pinTmp='';S.pin='';
+  go('home');syncFromGitHub();
+}
+
+function startChangePin(){
+  S.setPinMode=true;S.pinTmp='';S.pin='';
+  document.getElementById('pin-h').textContent='Create new PIN';
+  document.getElementById('pin-s').textContent='Choose a new 4-digit PIN';
+  document.getElementById('pin-msg').textContent='';
+  updDots();
+  document.getElementById('pin-screen').classList.add('show');
+}
+
+// ════════════════════════════════════════════════
+//  HOME
+// ════════════════════════════════════════════════
+function renderHome(){
+  const goals=DB.goals;
+  const active=goals.filter(g=>!g.completed).length;
+  const done=goals.filter(g=>g.completed).length;
+  const hr=new Date().getHours();
+  const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+  document.getElementById('greeting').textContent=greet+' 👋';
+  document.getElementById('hdate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('home-stats').innerHTML=`
+    <div class="sc"><div class="sn" style="color:var(--acc)">${active}</div><div class="sl2">Active goals</div></div>
+    <div class="sc"><div class="sn" style="color:var(--ok)">${done}</div><div class="sl2">Completed</div></div>`;
+  document.getElementById('home-cats').innerHTML=CATS.map(cat=>{
+    const cg=goals.filter(g=>g.category===cat.id);
+    const cd=cg.filter(g=>g.completed).length;
+    const pct=cg.length?Math.round(cd/cg.length*100):0;
+    const img=DB.getCfg('ci_'+cat.id,'');
+    return`<div class="ccard" onclick="openCat('${cat.id}')">
+      ${img?`<div class="ccard-bg" style="background-image:url('${e(img)}')"></div>`:''}
+      <div class="ccard-inner">
+        <div class="crow">
+          <span class="cem">${cat.emoji}</span>
+          <div><div class="cn">${cat.label}</div><div class="cct">${cg.length} goals · ${cd} done</div></div>
+          <span class="ca">›</span>
+        </div>
+        <div class="pb"><div class="pf" style="width:${pct}%;background:${cat.cv}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openCat(id){S.cat=id;go('cat');}
+
+// ════════════════════════════════════════════════
+//  CATEGORY VIEW
+// ════════════════════════════════════════════════
+function renderCat(){
+  const cat=CATS.find(c=>c.id===S.cat);if(!cat)return;
+  document.getElementById('cat-title').textContent=cat.emoji+' '+cat.label;
+  const goals=DB.goals.filter(g=>g.category===S.cat);
+  const done=goals.filter(g=>g.completed).length;
+  document.getElementById('cat-sub').textContent=`${goals.length} goals · ${done} completed`;
+  const body=document.getElementById('cat-body');
+  if(!goals.length){body.innerHTML=`<div class="empty"><div class="empty-i">${cat.emoji}</div><div class="empty-t">No goals yet.<br>Tap "+ Add" to get started.</div></div>`;return;}
+  const chains=buildChains(goals);
+  body.innerHTML=chains.map(chain=>{
+    if(chain.length>1)return renderChain(chain,cat);
+    return renderGoalItem(chain[0],cat.cv);
+  }).join('');
+}
+
+function buildChains(goals){
+  const used=new Set();const chains=[];
+  goals.filter(g=>!g.unlocksAfter||!goals.find(og=>og.id===g.unlocksAfter)).forEach(root=>{
+    if(used.has(root.id))return;
+    const chain=[root];used.add(root.id);
+    let cur=root;
+    for(let i=0;i<20;i++){
+      const next=goals.find(g=>g.unlocksAfter===cur.id&&!used.has(g.id));
+      if(!next)break;
+      chain.push(next);used.add(next.id);cur=next;
+    }
+    chains.push(chain);
+  });
+  goals.forEach(g=>{if(!used.has(g.id))chains.push([g]);});
+  return chains;
+}
+
+function isUnlocked(g){
+  if(!g.unlocksAfter)return true;
+  const pre=DB.goals.find(og=>og.id===g.unlocksAfter);
+  return pre?pre.completed:true;
+}
+
+function renderChain(chain,cat){
+  return`<div class="chain-box">
+    ${chain.map((g,i)=>{
+      const last=i===chain.length-1;
+      const ul=isUnlocked(g);
+      const col=g.completed?'var(--ok)':ul?cat.cv:'var(--t3)';
+      const cis=DB.checkins.filter(c=>c.goalId===g.id).length;
+      return`<div class="cstep">
+        <div class="cleft">
+          <div class="cdot" style="background:${col}"></div>
+          ${!last?`<div class="cln"></div>`:''}
+        </div>
+        <div class="cbody${last?' ':' '}">
+          <div style="font-size:13px;font-weight:500;color:${ul?'var(--t1)':'var(--t2)'};cursor:${ul?'pointer':'default'};line-height:1.4" onclick="${ul?`openGoal('${g.id}')`:''}">${e(g.name)}</div>
+          <div class="gmt" style="margin-top:4px">
+            ${g.completed?`<span class="bdg" style="background:rgba(62,201,167,.14);color:var(--ok)">✓ Done</span>`:
+              !ul?`<span class="bdg" style="background:var(--bg3);color:var(--t2)">🔒 Locked</span>`:
+              g.type==='onetime'&&g.deadline?`<span class="bdg" style="background:rgba(244,169,66,.12);color:var(--warn)">📅 ${fd(g.deadline)}</span>`:
+              `<span class="bdg" style="background:rgba(62,201,167,.1);color:var(--ok)">🔄 ${cis} check-ins</span>`}
+            ${g.rewardName?`<span class="bdg" style="background:var(--acc-dim);color:var(--acc)">🏆</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderGoalItem(g,cv){
+  const ul=isUnlocked(g);
+  const cis=DB.checkins.filter(c=>c.goalId===g.id).length;
+  return`<div class="gitem${!ul?' lk':''}" onclick="${ul?`openGoal('${g.id}')`:''}" >
+    <div class="grow">
+      <div class="gck${g.completed?' ok':!ul?' lk':''}">${g.completed?'✓':!ul?'🔒':''}</div>
+      <div style="flex:1">
+        <div class="gtx" style="${g.completed?'text-decoration:line-through;color:var(--t2)':''}">${e(g.name)}</div>
+        <div class="gmt">
+          ${g.completed?`<span class="bdg" style="background:rgba(62,201,167,.14);color:var(--ok)">✓ Done</span>`:
+            !ul?`<span class="bdg" style="background:var(--bg3);color:var(--t2)">🔒 Locked</span>`:
+            g.type==='onetime'&&g.deadline?`<span class="bdg" style="background:rgba(244,169,66,.12);color:var(--warn)">📅 ${fd(g.deadline)}</span>`:
+            `<span class="bdg" style="background:rgba(62,201,167,.1);color:var(--ok)">🔄 ${cis} check-ins</span>`}
+          ${g.rewardName?`<span class="bdg" style="background:var(--acc-dim);color:var(--acc)">🏆</span>`:''}
+        </div>
+        ${g.type==='onetime'?`<div class="pb"><div class="pf" style="width:${g.progress||0}%;background:${cv}"></div></div>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════
+//  GOAL DETAIL
+// ════════════════════════════════════════════════
+function openGoal(id){S.gid=id;go('goal');}
+
+function renderGoal(){
+  const g=DB.goals.find(g=>g.id===S.gid);if(!g)return;
+  const cat=CATS.find(c=>c.id===g.category);
+  const cis=DB.checkins.filter(c=>c.goalId===g.id).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('goal-title').textContent=g.name;
+  document.getElementById('goal-back').onclick=()=>{S.cat=g.category;go('cat');};
+  const d=dl(g.deadline);
+  document.getElementById('goal-body').innerHTML=`
+    <div class="card" style="margin-top:4px">
+      <div style="font-size:15px;font-weight:600;line-height:1.4;margin-bottom:10px">${e(g.name)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:${g.type==='onetime'?'14px':'4px'}">
+        ${g.type==='onetime'?`<span class="bdg" style="background:rgba(244,169,66,.12);color:var(--warn)">📅 ${g.deadline?fd(g.deadline):'No deadline'}</span>`:`<span class="bdg" style="background:rgba(62,201,167,.1);color:var(--ok)">🔄 Recurring · ${g.recurringFreq||'—'}</span>`}
+        ${g.completed?`<span class="bdg" style="background:rgba(62,201,167,.14);color:var(--ok)">✓ Completed ${fd(g.completedDate)}</span>`:''}
+        ${d!==null&&d<=7&&!g.completed?`<span class="bdg" style="background:rgba(244,107,107,.12);color:var(--err)">${d<0?'Overdue':d===0?'Due today':`${d}d left`}</span>`:''}
+      </div>
+      ${g.type==='onetime'?`
+        <div style="font-size:11px;color:var(--t2);margin-bottom:6px">Progress · ${g.progress||0}%</div>
+        <div class="pb-lg"><div class="pf-lg" style="width:${g.progress||0}%;background:${cat?.cv||'var(--acc)'}"></div></div>`:''}
+    </div>
+    ${g.rewardName?`<div class="rwp">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+        <span style="font-size:20px">🏆</span>
+        <span style="font-size:13px;font-weight:500;color:var(--acc)">${e(g.rewardName)}</span>
+      </div>
+      <div style="font-size:11px;color:var(--t2)">${g.completed?'Reward unlocked! 🎉':'Unlocks when you complete this goal'}</div>
+    </div>`:''}
+    ${!g.completed?`<button class="btn btn-a" onclick="markDone('${g.id}')">Mark as complete ✓</button>`:''}
+    <div class="sl">Check-in log <span style="float:right;text-transform:none;letter-spacing:0;color:var(--t2)">${cis.length} entries</span></div>
+    ${!g.completed?`<button class="btn btn-g" onclick="openCi('${g.id}')" style="margin-bottom:12px">+ Log a check-in</button>`:''}
+    ${cis.length===0?`<div class="empty" style="padding:24px 0"><div class="empty-t">No check-ins yet.</div></div>`:
+      cis.map(c=>`<div class="loge">
+        <div class="logd">${fd(c.date)}</div>
+        <div class="logn">${e(c.note)}</div>
+        ${c.prog!==undefined?`<div style="font-size:10px;color:var(--t2);margin-top:4px">Progress → ${c.prog}%</div>`:''}
+      </div>`).join('')}
+    <div style="height:20px"></div>`;
+}
+
+function markDone(id){
+  const gs=DB.goals;
+  const g=gs.find(g=>g.id===id);if(!g)return;
+  g.completed=true;g.completedDate=today();g.progress=100;
+  DB.goals=gs;
+  renderGoal();
+  syncWrite();
+  toast('Goal completed! 🎉','ok');
+}
+
+// ════════════════════════════════════════════════
+//  ADD / EDIT GOAL
+// ════════════════════════════════════════════════
+function openForm(catId,editId){
+  S.eid=editId||null;
+  document.getElementById('form-h').textContent=editId?'Edit goal':'New goal';
+  document.getElementById('f-del').style.display=editId?'block':'none';
+  const all=DB.goals;
+  document.getElementById('f-unlock').innerHTML=`<option value="">None — available right away</option>`+
+    all.filter(g=>g.id!==editId).map(g=>{
+      const c=CATS.find(c=>c.id===g.category);
+      return`<option value="${g.id}">${c?.emoji||''} ${e(g.name)}</option>`;
+    }).join('');
+  if(editId){
+    const g=all.find(g=>g.id===editId);
+    if(g){
+      document.getElementById('f-name').value=g.name;
+      document.getElementById('f-cat').value=g.category;
+      document.getElementById('f-dl').value=g.deadline||'';
+      document.getElementById('f-prog').value=g.progress||0;
+      document.getElementById('f-reward').value=g.rewardName||'';
+      document.getElementById('f-unlock').value=g.unlocksAfter||'';
+      document.getElementById('f-freq').value=g.recurringFreq||'weekly';
+      setType(g.type||'onetime');
+    }
+  } else {
+    document.getElementById('f-name').value='';
+    document.getElementById('f-dl').value='';
+    document.getElementById('f-prog').value='0';
+    document.getElementById('f-reward').value='';
+    document.getElementById('f-unlock').value='';
+    document.getElementById('f-freq').value='weekly';
+    if(catId)document.getElementById('f-cat').value=catId;
+    setType('onetime');
+  }
+  go('form');
+}
+
+function setType(t){
+  S.ftype=t;
+  document.getElementById('to-one').classList.toggle('sel',t==='onetime');
+  document.getElementById('to-rec').classList.toggle('sel',t==='recurring');
+  document.getElementById('deadline-row').style.display=t==='onetime'?'block':'none';
+  document.getElementById('freq-row').style.display=t==='recurring'?'block':'none';
+}
+
+function cancelForm(){
+  if(S.gid&&S.eid)go('goal');
+  else if(S.cat)go('cat');
+  else go('home');
+}
+
+function saveGoal(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){alert('Please enter a goal name.');return;}
+  const gs=DB.goals;
+  const id=S.eid||uid();
+  const existing=S.eid?gs.find(g=>g.id===S.eid):null;
+  const g={
+    id,name,
+    category:document.getElementById('f-cat').value,
+    type:S.ftype,
+    deadline:document.getElementById('f-dl').value||null,
+    recurringFreq:document.getElementById('f-freq').value,
+    progress:parseInt(document.getElementById('f-prog').value)||0,
+    rewardName:document.getElementById('f-reward').value.trim(),
+    unlocksAfter:document.getElementById('f-unlock').value||null,
+    completed:existing?existing.completed:false,
+    completedDate:existing?existing.completedDate:null,
+    createdAt:existing?existing.createdAt:new Date().toISOString(),
+  };
+  if(S.eid){const i=gs.findIndex(g=>g.id===S.eid);if(i>=0)gs[i]=g;}
+  else gs.push(g);
+  DB.goals=gs;
+  S.cat=g.category;
+  syncWrite();
+  go('cat');
+  toast('Goal saved ✓','ok');
+}
+
+function delGoal(){
+  if(!confirm('Delete this goal? This cannot be undone.'))return;
+  DB.goals=DB.goals.filter(g=>g.id!==S.eid);
+  syncWrite();
+  S.gid=null;S.eid=null;
+  go('cat');
+  toast('Goal deleted','ok');
+}
+
+// ════════════════════════════════════════════════
+//  CHECK-IN
+// ════════════════════════════════════════════════
+function openCi(gid){
+  S.gid=gid;
+  document.getElementById('ci-date').value=today();
+  document.getElementById('ci-note').value='';
+  const g=DB.goals.find(g=>g.id===gid);
+  document.getElementById('ci-prog').value=g?g.progress||'':'';
+  go('ci');
+}
+
+function saveCi(){
+  const note=document.getElementById('ci-note').value.trim();
+  if(!note){alert('Please add a note.');return;}
+  const progRaw=document.getElementById('ci-prog').value;
+  const prog=progRaw!==''?parseInt(progRaw):undefined;
+  const ci={
+    id:uid(),goalId:S.gid,
+    date:document.getElementById('ci-date').value,
+    note,prog,
+    createdAt:new Date().toISOString(),
+  };
+  const cis=DB.checkins;cis.push(ci);DB.checkins=cis;
+  if(prog!==undefined){
+    const gs=DB.goals;
+    const g=gs.find(g=>g.id===S.gid);
+    if(g){g.progress=prog;DB.goals=gs;syncWrite();}
+  }
+  syncWrite();
+  go('goal');
+  toast('Check-in saved ✓','ok');
+}
+
+// ════════════════════════════════════════════════
+//  REWARDS
+// ════════════════════════════════════════════════
+function renderRewards(){
+  const goals=DB.goals.filter(g=>g.rewardName);
+  const ul=goals.filter(g=>g.completed);
+  const lk=goals.filter(g=>!g.completed);
+  document.getElementById('rw-sub').textContent=`${ul.length} unlocked · ${lk.length} locked`;
+  let html='';
+  if(ul.length){
+    html+=`<div class="sl">Unlocked 🎉</div>`;
+    html+=ul.map(g=>{
+      const cat=CATS.find(c=>c.id===g.category);
+      return`<div class="rwcard">
+        <div class="rwi" style="background:${cat?.cv||'var(--acc)'}22">${cat?.emoji||'🏆'}</div>
+        <div style="flex:1;overflow:hidden">
+          <div style="font-size:13px;font-weight:500">${e(g.rewardName)}</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(g.name)}</div>
+        </div>
+        <span class="bdg" style="background:rgba(62,201,167,.14);color:var(--ok)">Unlocked</span>
+      </div>`;
+    }).join('');
+  }
+  if(lk.length){
+    html+=`<div class="sl" style="margin-top:${ul.length?4:0}px">Locked 🔒</div>`;
+    html+=lk.map(g=>{
+      const cat=CATS.find(c=>c.id===g.category);
+      return`<div class="rwcard rwd">
+        <div class="rwi" style="background:var(--bg3)">${cat?.emoji||'🏆'}</div>
+        <div style="flex:1;overflow:hidden">
+          <div style="font-size:13px;font-weight:500">${e(g.rewardName)}</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e(g.name)}</div>
+        </div>
+        <span class="bdg" style="background:var(--bg3);color:var(--t2)">${g.progress||0}%</span>
+      </div>`;
+    }).join('');
+  }
+  if(!goals.length)html=`<div class="empty"><div class="empty-i">🏆</div><div class="empty-t">No rewards yet.<br>Add a reward when creating a goal!</div></div>`;
+  document.getElementById('rw-body').innerHTML=html;
+}
+
+// ════════════════════════════════════════════════
+//  SETTINGS
+// ════════════════════════════════════════════════
+function renderSettings(){
+  const light=document.documentElement.hasAttribute('data-light');
+  document.getElementById('tgl-dark').classList.toggle('on',!light);
+  document.getElementById('s-bg').value=DB.getCfg('bgImage','');
+  document.getElementById('s-ghowner').value=DB.getCfg('ghOwner','');
+  document.getElementById('s-ghrepo').value=DB.getCfg('ghRepo','');
+  document.getElementById('s-ghtoken').value=DB.getCfg('ghToken','');
+  document.getElementById('cat-img-settings').innerHTML=CATS.map(cat=>`
+    <div class="frow">
+      <div class="flbl">${cat.emoji} ${cat.label} — image URL</div>
+      <input class="fi" placeholder="https://..." value="${e(DB.getCfg('ci_'+cat.id,''))}" oninput="setSetting('ci_${cat.id}',this.value)" style="margin-top:4px">
+    </div>`).join('');
+}
+
+function toggleDark(){
+  const light=document.documentElement.hasAttribute('data-light');
+  if(light){document.documentElement.removeAttribute('data-light');DB.setCfg('lightMode','0');}
+  else{document.documentElement.setAttribute('data-light','');DB.setCfg('lightMode','1');}
+  document.getElementById('tgl-dark').classList.toggle('on',light);
+}
+
+function applyBg(url){
+  const layer=document.getElementById('bgl');
+  layer.style.backgroundImage=url?`url('${url}')`:'none';
+  layer.style.opacity=url?'0.1':'0';
+  document.documentElement.style.setProperty('--bg-img',url?`url('${url}')`:'none');
+  DB.setCfg('bgImage',url);
+}
+
+function exportData(){
+  const data={goals:DB.goals,checkins:DB.checkins,settings:DB.cfg,exported:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='life-tracker-backup-'+today()+'.json';
+  a.click();
+}
+
+function importData(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.goals)DB.goals=d.goals;
+      if(d.checkins)DB.checkins=d.checkins;
+      if(d.settings)DB.cfg=d.settings;
+      loadCats();
+      applyAllSettings();
+      refreshCatSelect();
+      toast('Data imported ✓','ok');
+    }catch{toast('Import failed','err');}
+  };
+  r.readAsText(file);
+}
+
+// ════════════════════════════════════════════════
+//  GITHUB SYNC
+// ════════════════════════════════════════════════
+const GH='https://api.github.com';
+
+function ghCfg(){
+  return{
+    token:DB.getCfg('ghToken','').trim(),
+    owner:DB.getCfg('ghOwner','').trim(),
+    repo:DB.getCfg('ghRepo','').trim(),
+  };
+}
+
+function ghHeaders(token){
+  return{
+    'Authorization':'token '+token,
+    'Accept':'application/vnd.github.v3+json',
+    'Content-Type':'application/json',
+  };
+}
+
+function ghReady(){
+  const{token,owner,repo}=ghCfg();
+  return!!(token&&owner&&repo);
+}
+
+async function syncFromGitHub(){
+  if(!ghReady())return;
+  const{token,owner,repo}=ghCfg();
+  toast('Syncing…','sy');
+  try{
+    const res=await fetch(`${GH}/repos/${owner}/${repo}/contents/data.json`,{headers:ghHeaders(token)});
+    if(res.status===404){toast('No data yet — will create on first save','ok');return;}
+    if(!res.ok){const e=await res.json();throw new Error(e.message||'GitHub error '+res.status);}
+    const file=await res.json();
+    DB.setCfg('ghSha',file.sha);
+    const data=JSON.parse(decodeURIComponent(escape(atob(file.content.replace(/\n/g,'')))));
+    if(data.goals)DB.goals=data.goals;
+    if(data.checkins)DB.checkins=data.checkins;
+    if(data.cats){DB.cats=data.cats;loadCats();refreshCatSelect();}
+    renderHome();
+    toast('Synced ✓','ok');
+  }catch(err){
+    console.error('GitHub sync failed:',err);
+    toast('Sync failed: '+err.message,'err');
+  }
+}
+
+let ghWriteTimer;
+function syncWrite(){
+  // Debounce — write to GitHub 2s after last change
+  clearTimeout(ghWriteTimer);
+  ghWriteTimer=setTimeout(()=>_doGitHubWrite(),2000);
+}
+
+async function _doGitHubWrite(){
+  if(!ghReady())return;
+  const{token,owner,repo}=ghCfg();
+  const data={
+    goals:DB.goals,
+    checkins:DB.checkins,
+    cats:DB.cats||CATS,
+    lastUpdated:new Date().toISOString(),
+  };
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2))));
+  const sha=DB.getCfg('ghSha','');
+  const body={message:'Life Tracker update '+new Date().toLocaleDateString(),content,...(sha?{sha}:{})};
+  try{
+    const res=await fetch(`${GH}/repos/${owner}/${repo}/contents/data.json`,{
+      method:'PUT',headers:ghHeaders(token),body:JSON.stringify(body),
+    });
+    if(res.status===409){
+      // SHA conflict — refetch and retry once
+      await syncFromGitHub();
+      await _doGitHubWrite();
+      return;
+    }
+    if(!res.ok){const e=await res.json();throw new Error(e.message);}
+    const result=await res.json();
+    DB.setCfg('ghSha',result.content.sha);
+  }catch(err){
+    console.error('GitHub write failed:',err);
+  }
+}
+
+async function testConn(){
+  const owner=(document.getElementById('s-ghowner').value||'').trim();
+  const repo=(document.getElementById('s-ghrepo').value||'').trim();
+  const token=(document.getElementById('s-ghtoken').value||'').trim();
+  if(!owner||!repo||!token){alert('Fill in all three GitHub fields first.');return;}
+  DB.setCfg('ghOwner',owner);DB.setCfg('ghRepo',repo);DB.setCfg('ghToken',token);
+  toast('Testing…','sy');
+  try{
+    const res=await fetch(`${GH}/repos/${owner}/${repo}`,{headers:ghHeaders(token)});
+    if(res.status===401){toast('Bad token — check your Personal Access Token','err');return;}
+    if(res.status===404){toast('Repo not found — check username and repo name','err');return;}
+    if(!res.ok){toast('GitHub error '+res.status,'err');return;}
+    const r=await res.json();
+    toast('Connected ✓ — repo "'+r.name+'" found','ok');
+  }catch(err){
+    toast('Error: '+err.message,'err');
+  }
+}
+
+async function syncNow(){
+  const owner=(document.getElementById('s-ghowner').value||'').trim();
+  const repo=(document.getElementById('s-ghrepo').value||'').trim();
+  const token=(document.getElementById('s-ghtoken').value||'').trim();
+  if(owner)DB.setCfg('ghOwner',owner);
+  if(repo)DB.setCfg('ghRepo',repo);
+  if(token)DB.setCfg('ghToken',token);
+  await syncFromGitHub();
+}
+
+// ════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════
+let toastT;
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show '+type;
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>el.className='',type==='err'?6000:3000);
+}
+
+// ════════════════════════════════════════════════
+//  APPLY SAVED SETTINGS
+// ════════════════════════════════════════════════
+function applyAllSettings(){
+  if(DB.getCfg('lightMode')==='1')document.documentElement.setAttribute('data-light','');
+  const bg=DB.getCfg('bgImage');
+  if(bg){
+    document.getElementById('bgl').style.backgroundImage=`url('${bg}')`;
+    document.getElementById('bgl').style.opacity='0.1';
+  }
+}
+
+// ════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════
+loadCats();
+buildNavs();
+applyAllSettings();
+refreshCatSelect();
+initPin();
+</script>
+</body>
+</html>
